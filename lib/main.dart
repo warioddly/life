@@ -16,8 +16,18 @@ class Life extends StatefulWidget {
 class _LifeState extends State<Life> {
   @override
   Widget build(BuildContext context) {
-    return GameWidget(
-      game: LifeGame(),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text("LIFE"),
+        ),
+        body: Expanded(
+          child: GameWidget(
+            game: LifeGame(),
+          ),
+        )
+      ),
     );
   }
 }
