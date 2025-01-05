@@ -28,7 +28,7 @@ jobs:
           flutter pub get
           
           # Build project
-          flutter build web --release --web-renderer=canvaskit --base-href="/life/" --wasm
+          flutter build web --release --base-href="/life/" --wasm
 
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
