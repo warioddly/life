@@ -1,31 +1,62 @@
-import 'dart:developer';
+import 'dart:async';
 import 'dart:math' hide log;
 import 'dart:ui';
-import 'package:life/configs.dart';
-
+import 'package:flame_bloc/flame_bloc.dart';
+import 'package:life/game/bloc/config_bloc.dart';
+import 'package:life/game/core/configs.dart';
+import 'package:life/game/game.dart';
 import 'block.dart';
 import 'package:flame/events.dart';
 import 'package:flame/components.dart' hide Block;
 
-class LifeComponent extends PositionComponent with TapCallbacks {
+class LifeComponent extends PositionComponent
+    with TapCallbacks, HasGameReference<LifeGame> {
 
-  late final LifeGrid grid;
+  LifeGrid _grid = LifeGrid(0, 0, 0);
+  var _dtSum = 0.0;
+
+  ConfigModel get state => game.configBloc.state.model;
 
   @override
-  void onLoad() {
+  Future<void> onLoad() async {
+    super.onLoad();
+    _initialize();
+
+    add(FlameBlocListener(
+      bloc: game.configBloc,
+      onNewState: (ConfigState state) {
+
+        if (state.state is ConfigUpdateGridState) {
+          _initialize(
+            grid: state.model.grid,
+            cellSize: state.model.cellSize,
+          );
+        }
+
+      },
+    ));
+
+  }
+
+
+  void _initialize({
+    int grid = Configs.grid,
+    double cellSize = Configs.cellSize,
+  }) {
 
     size = Vector2(
-        Configs.rows.toDouble() * Configs.cellSize,
-        Configs.columns.toDouble() * Configs.cellSize
+        grid.toDouble() * cellSize,
+        grid.toDouble() * cellSize
+    );
+    position = (game.size - size) / 2;
+
+    _grid = LifeGrid(
+      grid,
+      grid,
+      cellSize,
     );
 
-    grid = LifeGrid(
-        Configs.rows,
-        Configs.columns,
-        Configs.cellSize,
-    );
-
-    for (final items in grid.blocks) {
+    for (final items in _grid.blocks) {
       for (final item in items) {
         if (Random().nextInt(2) == 1) {
           item.toggle();
@@ -37,19 +68,32 @@ class LifeComponent extends PositionComponent with TapCallbacks {
 
   @override
   void update(double dt) {
-    grid.update();
+    _grid.update();
   }
 
   @override
   void render(Canvas canvas) {
-    grid.render(canvas);
+    _grid.render(canvas);
   }
 
   @override
   void onTapDown(TapDownEvent event) {
-    final i = (event.localPosition.x / Configs.cellSize).floor();
-    final j = (event.localPosition.y / Configs.cellSize).floor();
-    grid.blocks[i][j].toggle();
+    final i = (event.localPosition.x / state.cellSize).floor();
+    final j = (event.localPosition.y / state.cellSize).floor();
+    _grid.blocks[i][j].toggle();
+  }
+
+  @override
+  void updateTree(double dt) {
+    if (state.paused) {
+      return;
+    }
+    final speed = 1 / state.speed;
+    _dtSum += dt;
+    if(_dtSum > speed) {
+      super.updateTree(speed);
+      _dtSum -= speed;
+    }
   }
 
 }
@@ -74,7 +118,7 @@ class LifeGrid {
         if (block.isAlive && (neighbors < 2 || neighbors > 3)) {
           block.setDead();
         }
-        else if (neighbors == 3){
+        else if (neighbors == 3) {
           block.setAlive();
         }
 
