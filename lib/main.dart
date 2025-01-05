@@ -40,7 +40,7 @@ class _LifeState extends State<Life> {
                   game: LifeGame(
                       configBloc: configBloc,
                       camera: CameraComponent.withFixedResolution(
-                        width: size.width,
+                        width: size.width + 800,
                         height: size.height,
                       )
                   ),
